@@ -6,3 +6,5 @@ torch  # Nếu bạn muốn sử dụng PyTorch
 tensorflow  # Nếu bạn muốn sử dụng TensorFlow
 confluent_kafka
 nest_asyncio
+textblob
+
