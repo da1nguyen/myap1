@@ -5,6 +5,8 @@ import asyncio
 from datetime import datetime, timedelta
 import nest_asyncio
 from transformers import pipeline
+import torch  # Kiểm tra PyTorch
+import tensorflow as tf  # Kiểm tra TensorFlow
 
 # Cài đặt nest_asyncio để cho phép vòng lặp sự kiện đã chạy tiếp tục hoạt động
 nest_asyncio.apply()
@@ -20,9 +22,28 @@ reddit = asyncpraw.Reddit(
 # Danh sách để lưu bài viết
 posts_list = []
 
+# Kiểm tra xem PyTorch hoặc TensorFlow có được cài đặt không
+def check_framework():
+    try:
+        if torch.cuda.is_available():
+            return 'torch'
+        elif tf.config.list_physical_devices('GPU'):
+            return 'tensorflow'
+        else:
+            return 'none'
+    except Exception as e:
+        st.error(f"Error checking frameworks: {str(e)}")
+        return 'none'
+
 # Tạo sentiment analysis pipeline
+framework = check_framework()
 try:
-    sentiment_model = pipeline('sentiment-analysis', model='distilbert-base-uncased-finetuned-sst-2-english')
+    if framework == 'torch':
+        sentiment_model = pipeline('sentiment-analysis', model='distilbert-base-uncased-finetuned-sst-2-english')
+    elif framework == 'tensorflow':
+        sentiment_model = pipeline('sentiment-analysis', model='distilbert-base-uncased-finetuned-sst-2-english')
+    else:
+        st.error("Neither PyTorch nor TensorFlow is installed. Please install one of them.")
 except Exception as e:
     st.error(f"Error loading sentiment model: {str(e)}")
 
