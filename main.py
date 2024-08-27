@@ -49,12 +49,16 @@ async def fetch_latest_posts():
             posts_list.append({
                 "Title": submission.title,
                 "Created Time (VN)": format_time(submission.created_utc),
-                "Sentiment": sentiment
+                "Sentiment": sentiment,
+                "Created Time UTC": submission.created_utc  # Thêm thời gian để sắp xếp
             })
 
-            # Cập nhật DataFrame
+            # Cập nhật DataFrame và sắp xếp bài viết mới nhất lên đầu
             df = pd.DataFrame(posts_list)
-            dataframe_placeholder.dataframe(df, height=400)  # Cập nhật bảng dữ liệu với thanh cuộn
+            df = df.sort_values(by="Created Time UTC", ascending=False).drop(columns=["Created Time UTC"])
+
+            # Hiển thị bảng dữ liệu với cột "Title" được mở rộng
+            dataframe_placeholder.dataframe(df, height=400, use_container_width=True)
 
         await asyncio.sleep(0.5)
 
