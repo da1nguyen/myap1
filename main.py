@@ -52,8 +52,11 @@ async def fetch_latest_posts():
                 "Sentiment": sentiment
             })
 
-            # Hiển thị bài viết mới nhất trong Streamlit
-            st.write(posts_list[-1])
+            # Chuyển dữ liệu vào DataFrame
+            df = pd.DataFrame(posts_list)
+
+            # Hiển thị DataFrame với thanh cuộn trong Streamlit
+            st.dataframe(df, height=400)  # Chiều cao 400px với thanh cuộn
 
         await asyncio.sleep(0.5)
 
