@@ -48,7 +48,7 @@ async def fetch_latest_posts():
     subreddit = await reddit.subreddit('all')
 
     # Tạo một không gian để cập nhật bảng dữ liệu
-    st.write("### Reddit Posts")
+    st.write("### Phân tích cảm xuất bình luận theo thời gian thực")
     data_placeholder = st.empty()
 
     while True:
