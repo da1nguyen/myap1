@@ -21,7 +21,10 @@ reddit = asyncpraw.Reddit(
 posts_list = []
 
 # Tạo sentiment analysis pipeline
-sentiment_model = pipeline('sentiment-analysis')
+try:
+    sentiment_model = pipeline('sentiment-analysis', model='distilbert-base-uncased-finetuned-sst-2-english')
+except Exception as e:
+    st.error(f"Error loading sentiment model: {str(e)}")
 
 def format_time(utc_timestamp):
     """Chuyển đổi thời gian UTC sang định dạng ngày giờ khu vực Việt Nam (UTC+7)."""
@@ -45,8 +48,14 @@ async def fetch_latest_posts():
             post_data = {
                 "Title": submission.title,
                 "Created Time (VN)": format_time(submission.created_utc),
-                "Sentiment": sentiment_model(submission.title)[0]['label']  # Dự đoán cảm xúc
+                "Sentiment": ""
             }
+
+            # Dự đoán cảm xúc nếu mô hình được tải thành công
+            if sentiment_model:
+                sentiment_result = sentiment_model(submission.title)[0]
+                post_data["Sentiment"] = sentiment_result['label']
+
             posts_list.append(post_data)
 
             # Chuyển dữ liệu vào DataFrame
