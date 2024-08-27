@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 import nest_asyncio
 import streamlit as st
 from textblob import TextBlob
-import numpy as np
 
 # Cài đặt nest_asyncio để cho phép vòng lặp sự kiện đã chạy tiếp tục hoạt động
 nest_asyncio.apply()
@@ -50,38 +49,25 @@ async def fetch_latest_posts():
             posts_list.append({
                 "Title": submission.title,
                 "Created Time (VN)": format_time(submission.created_utc),
-                "Sentiment": sentiment,
-                "Created Time UTC": submission.created_utc  # Thêm thời gian để sắp xếp
+                "Sentiment": sentiment
             })
 
-            # Cập nhật DataFrame và xử lý lỗi
+            # Cập nhật DataFrame
             df = pd.DataFrame(posts_list)
             
-            if "Created Time UTC" in df.columns:
-                # Chuyển đổi cột "Created Time UTC" thành kiểu số và loại bỏ giá trị NaN
-                df['Created Time UTC'] = pd.to_numeric(df['Created Time UTC'], errors='coerce')
-                df = df.dropna(subset=['Created Time UTC'])
-                
-                try:
-                    df = df.sort_values(by="Created Time UTC", ascending=False).drop(columns=["Created Time UTC"])
-                except Exception as e:
-                    st.error(f"Error sorting DataFrame: {e}")
-            
+            if not df.empty:
+                df = df.sort_values(by="Created Time (VN)", ascending=False)
+
             # Hiển thị bảng dữ liệu với cột "Title" được mở rộng
-            dataframe_placeholder.dataframe(df, height=400, use_container_width=True)
+            st.dataframe(df, use_container_width=True)
 
         await asyncio.sleep(0.5)
 
-async def main(max_iterations=10):
+async def main():
     """Chạy vòng lặp chính để lấy và hiển thị bài viết."""
-    iteration = 0
-    while iteration < max_iterations:
+    while True:
         await fetch_latest_posts()
-        iteration += 1
 
-# Khởi tạo placeholder cho bảng dữ liệu
-dataframe_placeholder = st.empty()
-
-# Nút để bắt đầu quá trình lấy bài viết
+# Khởi tạo ứng dụng Streamlit
 if st.button('Start Fetching'):
     asyncio.run(main())
