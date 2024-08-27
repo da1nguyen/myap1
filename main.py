@@ -1,9 +1,9 @@
-import streamlit as st
 import asyncpraw
 import pandas as pd
 import asyncio
 from datetime import datetime, timedelta
 import nest_asyncio
+import streamlit as st
 from textblob import TextBlob
 
 # Cài đặt nest_asyncio để cho phép vòng lặp sự kiện đã chạy tiếp tục hoạt động
@@ -39,7 +39,7 @@ async def fetch_latest_posts():
 
     subreddit = await reddit.subreddit('all')
 
-    async for submission in subreddit.new(limit=10):  # Lấy nhiều bài viết hơn để kiểm tra
+    async for submission in subreddit.new(limit=10):
         if submission.id not in seen_submission_ids:
             seen_submission_ids.add(submission.id)
 
@@ -52,23 +52,18 @@ async def fetch_latest_posts():
                 "Sentiment": sentiment
             })
 
-            # Chuyển dữ liệu vào DataFrame
-            df = pd.DataFrame(posts_list)
+            # Hiển thị bài viết mới nhất trong Streamlit
+            st.write(posts_list[-1])
 
-            # Hiển thị DataFrame mới nhất
-            st.write(df.tail(1))  # Hiển thị bài viết mới nhất
-
-        # Chờ 1 giây trước khi lấy dữ liệu mới
         await asyncio.sleep(0.5)
 
-# Chạy hàm chính
-async def main():
-    while True:
+async def main(max_iterations=10):
+    """Chạy vòng lặp chính để lấy và hiển thị bài viết."""
+    iteration = 0
+    while iteration < max_iterations:
         await fetch_latest_posts()
+        iteration += 1
 
-# Chạy Streamlit với vòng lặp sự kiện
-if __name__ == "__main__":
-    st.title("Real-Time Reddit Post Sentiment Analysis")
-    st.write("Fetching latest posts from Reddit and analyzing sentiment in real-time...")
-
+# Nút để bắt đầu quá trình lấy bài viết
+if st.button('Start Fetching'):
     asyncio.run(main())
