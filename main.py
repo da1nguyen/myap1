@@ -17,9 +17,8 @@ reddit = asyncpraw.Reddit(
     check_for_updates=False
 )
 
-# Khởi tạo DataFrame
-posts_list = []
-df = pd.DataFrame(posts_list)
+# Khởi tạo DataFrame một lần duy nhất
+df = pd.DataFrame(columns=["Title", "Created Time (VN)", "Sentiment"])
 
 def format_time(utc_timestamp):
     """Chuyển đổi thời gian UTC sang định dạng ngày giờ khu vực Việt Nam (UTC+7)."""
@@ -33,7 +32,7 @@ def analyze_sentiment(text):
     return 'Positive' if analysis.sentiment.polarity > 0 else 'Negative' if analysis.sentiment.polarity < 0 else 'Neutral'
 
 async def fetch_latest_posts():
-    """Lấy bài viết mới nhất từ toàn bộ Reddit và chỉ lưu bài viết mới."""
+    """Lấy bài viết mới nhất từ toàn bộ Reddit và cập nhật DataFrame hiện tại."""
     global df
     seen_submission_ids = set()
     subreddit = await reddit.subreddit('all')
@@ -46,7 +45,6 @@ async def fetch_latest_posts():
                 sentiment = analyze_sentiment(submission.title)
 
                 # Cập nhật DataFrame
-                global df
                 new_entry = {
                     "Title": submission.title,
                     "Created Time (VN)": format_time(submission.created_utc),
@@ -56,6 +54,7 @@ async def fetch_latest_posts():
                 df = df.sort_values(by="Created Time (VN)", ascending=False).reset_index(drop=True)
 
                 # Hiển thị bảng dữ liệu với thanh cuộn
+                st.write("### Reddit Posts", unsafe_allow_html=True)
                 st.dataframe(df, use_container_width=True)
 
             await asyncio.sleep(1)  # Thay đổi thời gian chờ tùy theo nhu cầu
