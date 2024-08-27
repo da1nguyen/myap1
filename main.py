@@ -52,9 +52,9 @@ async def fetch_latest_posts():
                 "Sentiment": sentiment
             })
 
-            # Chuyển dữ liệu vào DataFrame và hiển thị trong Streamlit
+            # Cập nhật DataFrame
             df = pd.DataFrame(posts_list)
-            st.dataframe(df, height=400)  # Chiều cao 400px với thanh cuộn
+            dataframe_placeholder.dataframe(df, height=400)  # Cập nhật bảng dữ liệu với thanh cuộn
 
         await asyncio.sleep(0.5)
 
@@ -64,6 +64,9 @@ async def main(max_iterations=10):
     while iteration < max_iterations:
         await fetch_latest_posts()
         iteration += 1
+
+# Khởi tạo placeholder cho bảng dữ liệu
+dataframe_placeholder = st.empty()
 
 # Nút để bắt đầu quá trình lấy bài viết
 if st.button('Start Fetching'):
