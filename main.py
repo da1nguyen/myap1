@@ -58,7 +58,7 @@ async def fetch_latest_posts():
             df = pd.DataFrame(posts_list)
             
             if "Created Time UTC" in df.columns:
-                # Xử lý lỗi nếu có giá trị không hợp lệ trong cột 'Created Time UTC'
+                # Chuyển đổi cột "Created Time UTC" thành kiểu số và loại bỏ giá trị NaN
                 df['Created Time UTC'] = pd.to_numeric(df['Created Time UTC'], errors='coerce')
                 df = df.dropna(subset=['Created Time UTC'])
                 
