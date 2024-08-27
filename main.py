@@ -37,6 +37,10 @@ async def fetch_latest_posts():
     seen_submission_ids = set()
     subreddit = await reddit.subreddit('all')
 
+    # Tạo một không gian để cập nhật bảng dữ liệu
+    st.write("### Reddit Posts")
+    data_placeholder = st.empty()
+
     while True:
         async for submission in subreddit.new(limit=10):
             if submission.id not in seen_submission_ids:
@@ -53,9 +57,9 @@ async def fetch_latest_posts():
                 df = pd.concat([pd.DataFrame([new_entry]), df], ignore_index=True)
                 df = df.sort_values(by="Created Time (VN)", ascending=False).reset_index(drop=True)
 
-                # Hiển thị bảng dữ liệu với thanh cuộn
-                st.write("### Reddit Posts", unsafe_allow_html=True)
-                st.dataframe(df, use_container_width=True)
+                # Cập nhật nội dung bảng dữ liệu
+                with data_placeholder:
+                    st.dataframe(df, use_container_width=True)
 
             await asyncio.sleep(1)  # Thay đổi thời gian chờ tùy theo nhu cầu
 
