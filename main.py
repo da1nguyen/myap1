@@ -18,7 +18,7 @@ reddit = asyncpraw.Reddit(
 )
 
 # Khởi tạo DataFrame một lần duy nhất
-df = pd.DataFrame(columns=["Title", "Created Time (VN)", "Sentiment"])
+df = pd.DataFrame(columns=["Nội dung bình luận mới nhất", "Thời gian (VN)", "Phân tích cảm xúc"])
 
 def format_time(utc_timestamp):
     """Chuyển đổi thời gian UTC sang định dạng ngày giờ khu vực Việt Nam (UTC+7)."""
@@ -101,5 +101,5 @@ async def fetch_latest_posts():
             await asyncio.sleep(1)  # Thay đổi thời gian chờ tùy theo nhu cầu
 
 # Chạy ứng dụng Streamlit
-if st.button('Start Fetching'):
+if st.button('Thực hiện phân tích cảm xúc theo thời gian thực'):
     asyncio.run(fetch_latest_posts())
