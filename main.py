@@ -18,7 +18,7 @@ reddit = asyncpraw.Reddit(
 )
 
 # Khởi tạo DataFrame một lần duy nhất
-df = pd.DataFrame(columns=["Nội dung bình luận mới nhất", "Thời gian (VN)", "Phân tích cảm xúc"])
+df = pd.DataFrame(columns=["Title", "Created Time (VN)", "Sentiment"])
 
 def format_time(utc_timestamp):
     """Chuyển đổi thời gian UTC sang định dạng ngày giờ khu vực Việt Nam (UTC+7)."""
