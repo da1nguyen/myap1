@@ -4,7 +4,6 @@ import pandas as pd
 import asyncio
 from datetime import datetime, timedelta
 import nest_asyncio
-from transformers import pipeline
 
 # Cài đặt nest_asyncio để cho phép vòng lặp sự kiện đã chạy tiếp tục hoạt động
 nest_asyncio.apply()
@@ -34,16 +33,15 @@ def check_framework():
 
 # Tạo sentiment analysis pipeline
 framework = check_framework()
-try:
-    if framework == 'torch':
-        sentiment_model = pipeline('sentiment-analysis', model='distilbert-base-uncased-finetuned-sst-2-english', framework='pt')
-    elif framework == 'tensorflow':
-        sentiment_model = pipeline('sentiment-analysis', model='distilbert-base-uncased-finetuned-sst-2-english', framework='tf')
-    else:
-        sentiment_model = None
-        st.error("Neither PyTorch nor TensorFlow is installed. Please install one of them.")
-except Exception as e:
-    st.error(f"Error loading sentiment model: {str(e)}")
+sentiment_model = None
+if framework == 'torch':
+    from transformers import pipeline
+    sentiment_model = pipeline('sentiment-analysis', framework='pt')
+elif framework == 'tensorflow':
+    from transformers import pipeline
+    sentiment_model = pipeline('sentiment-analysis', framework='tf')
+else:
+    st.error("Neither PyTorch nor TensorFlow is installed. Please install one of them.")
 
 def format_time(utc_timestamp):
     """Chuyển đổi thời gian UTC sang định dạng ngày giờ khu vực Việt Nam (UTC+7)."""
