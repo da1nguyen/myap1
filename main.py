@@ -75,25 +75,11 @@ def main():
 
     if st.button('Fetch Latest Post'):
         st.write('Fetching the latest post...')
-        # Chạy hàm fetch_latest_post trong môi trường bất đồng bộ
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        post_data = loop.run_until_complete(fetch_latest_post())
+        # Chạy hàm fetch_latest_post trong môi trường đồng bộ
+        post_data = asyncio.run(fetch_latest_post())
         st.write(post_data)
 
     st.write('Consuming messages from Kafka:')
     # Hiển thị tin nhắn từ Kafka
     try:
-        while True:
-            message = consume_messages()
-            if message:
-                st.write(message)
-            else:
-                break
-    except KeyboardInterrupt:
-        pass
-    finally:
-        consumer.close()
-
-if __name__ == "__main__":
-    main()
+        whil
