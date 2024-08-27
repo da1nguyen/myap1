@@ -66,8 +66,10 @@ def main():
 
     if st.button('Fetch Latest Post'):
         st.write('Fetching the latest post...')
-        # Chạy hàm fetch_latest_post trong môi trường đồng bộ
-        post_data = asyncio.run(fetch_latest_post())
+        # Chạy hàm fetch_latest_post trong môi trường bất đồng bộ
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        post_data = loop.run_until_complete(fetch_latest_post())
         st.write(post_data)
 
     st.write('Consuming messages from Kafka:')
