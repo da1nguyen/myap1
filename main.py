@@ -1,94 +1,48 @@
 import streamlit as st
-import asyncpraw
-import pandas as pd
+from confluent_kafka import Consumer, KafkaException, KafkaError
 import asyncio
-from datetime import datetime, timedelta
 import nest_asyncio
 
-# Cài đặt nest_asyncio để cho phép vòng lặp sự kiện đã chạy tiếp tục hoạt động
+# Apply nest_asyncio to allow the event loop to continue running
 nest_asyncio.apply()
 
-# Cấu hình và kết nối với Reddit API
-reddit = asyncpraw.Reddit(
-    client_id='FvUOzRsVAyqjhPwwURAQNA',
-    client_secret='etpictk0iK7NoNvEjTjovK-lXQjZRg',
-    user_agent='My user agent description',
-    check_for_updates=False
-)
+# Kafka Consumer configuration
+conf = {
+    'bootstrap.servers': 'localhost:9092',
+    'group.id': 'mygroup',
+    'auto.offset.reset': 'earliest'
+}
 
-# Danh sách để lưu bài viết
-posts_list = []
+# Initialize the Kafka Consumer
+consumer = Consumer(conf)
+topic = 'your_topic_name'  # Replace with your actual Kafka topic
+consumer.subscribe([topic])
 
-# Kiểm tra xem PyTorch hoặc TensorFlow có được cài đặt không
-def check_framework():
+# Function to fetch messages from Kafka
+async def fetch_messages():
     try:
-        import torch
-        return 'torch'
-    except ImportError:
-        try:
-            import tensorflow as tf
-            return 'tensorflow'
-        except ImportError:
-            return 'none'
+        msg = consumer.poll(timeout=1.0)  # Poll for a message
+        if msg is None:
+            return None
+        if msg.error():
+            if msg.error().code() == KafkaError._PARTITION_EOF:
+                st.write("End of partition reached.")
+            else:
+                raise KafkaException(msg.error())
+        else:
+            return msg.value().decode('utf-8')  # Decode the message
+    except Exception as e:
+        st.error(f"Error fetching message: {e}")
+        return None
 
-# Tạo sentiment analysis pipeline
-framework = check_framework()
-sentiment_model = None
-if framework == 'torch':
-    from transformers import pipeline
-    sentiment_model = pipeline('sentiment-analysis', framework='pt')
-elif framework == 'tensorflow':
-    from transformers import pipeline
-    sentiment_model = pipeline('sentiment-analysis', framework='tf')
-else:
-    st.error("Neither PyTorch nor TensorFlow is installed. Please install one of them.")
-
-def format_time(utc_timestamp):
-    """Chuyển đổi thời gian UTC sang định dạng ngày giờ khu vực Việt Nam (UTC+7)."""
-    utc_time = datetime.utcfromtimestamp(utc_timestamp)
-    vietnam_time = utc_time + timedelta(hours=7)
-    return vietnam_time.strftime('%Y-%m-%d %H:%M:%S')
-
-async def fetch_latest_posts():
-    """Lấy bài viết mới nhất từ toàn bộ Reddit và chỉ lưu bài viết mới."""
-    global posts_list
-
-    seen_submission_ids = set()
-
-    subreddit = await reddit.subreddit('all')  # Await the subreddit coroutine
-
-    async for submission in subreddit.new(limit=10):  # Lấy nhiều bài viết hơn để kiểm tra
-        if submission.id not in seen_submission_ids:
-            seen_submission_ids.add(submission.id)
-
-            # Thêm bài viết vào danh sách
-            post_data = {
-                "Title": submission.title,
-                "Created Time (VN)": format_time(submission.created_utc),
-                "Sentiment": ""
-            }
-
-            # Dự đoán cảm xúc nếu mô hình được tải thành công
-            if sentiment_model:
-                sentiment_result = sentiment_model(submission.title)[0]
-                post_data["Sentiment"] = sentiment_result['label']
-
-            posts_list.append(post_data)
-
-            # Chuyển dữ liệu vào DataFrame
-            df = pd.DataFrame(posts_list)
-
-            # Hiển thị DataFrame mới nhất
-            st.write(df.tail(1))  # Hiển thị bài viết mới nhất
-
-        # Chờ 1 giây trước khi lấy dữ liệu mới
-        await asyncio.sleep(0.5)
-
-# Chạy hàm chính
+# Main function to continuously fetch messages
 async def main():
     while True:
-        await fetch_latest_posts()
+        message = await fetch_messages()
+        if message:
+            st.write(f"Received message: {message}")
+        await asyncio.sleep(1)  # Wait for 1 second before fetching the next message
 
-# Chạy vòng lặp sự kiện
+# Run the event loop
 if __name__ == "__main__":
     asyncio.run(main())
