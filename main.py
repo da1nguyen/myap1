@@ -39,7 +39,6 @@ async def fetch_latest_post():
     """Lấy bài viết mới nhất từ toàn bộ Reddit và gửi vào Kafka."""
     try:
         subreddit = await reddit.subreddit('all')
-
         async for submission in subreddit.new(limit=1):
             post_data = {
                 "Title": submission.title,
@@ -51,10 +50,11 @@ async def fetch_latest_post():
             producer.produce('your_topic_name', value=json.dumps(post_data))
             producer.flush()
 
+            st.write("Post data sent to Kafka:", post_data)
             return post_data
 
     except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
+        st.error(f"An error occurred while fetching Reddit post: {str(e)}")
         return None
 
 def consume_messages():
@@ -62,12 +62,15 @@ def consume_messages():
     try:
         msg = consumer.poll(timeout=1.0)
         if msg is None:
+            st.write("No message received from Kafka.")
             return None
         if msg.error():
-            raise KafkaException(msg.error())
+            st.error(f"Kafka error: {msg.error()}")
+            return None
+        st.write("Message received from Kafka.")
         return msg.value().decode('utf-8')
     except KafkaException as e:
-        st.error(f"Kafka error: {str(e)}")
+        st.error(f"KafkaException: {str(e)}")
         return None
 
 def main():
@@ -87,9 +90,10 @@ def main():
             if message:
                 st.write(message)
             else:
+                st.write("No new messages to display.")
                 break
     except KeyboardInterrupt:
-        pass
+        st.write("Stopped consuming messages.")
     finally:
         consumer.close()
 
