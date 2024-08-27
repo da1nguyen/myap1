@@ -31,10 +31,8 @@ def analyze_sentiment(text):
     analysis = TextBlob(text)
     return 'Positive' if analysis.sentiment.polarity > 0 else 'Negative' if analysis.sentiment.polarity < 0 else 'Neutral'
 
-async def fetch_latest_posts():
+async def fetch_latest_posts(df):
     """Lấy bài viết mới nhất từ toàn bộ Reddit và chỉ lưu bài viết mới."""
-    global posts_list
-
     seen_submission_ids = set()
 
     subreddit = await reddit.subreddit('all')
@@ -46,24 +44,26 @@ async def fetch_latest_posts():
             sentiment = analyze_sentiment(submission.title)
 
             # Thêm bài viết vào danh sách
-            posts_list.insert(0, {  # Thêm vào đầu danh sách để tin mới nhất xuất hiện trên đầu
+            posts_list.append({
                 "Title": submission.title,
                 "Created Time (VN)": format_time(submission.created_utc),
                 "Sentiment": sentiment
             })
 
-            # Cập nhật DataFrame
+            # Cập nhật DataFrame và sắp xếp theo thời gian
             df = pd.DataFrame(posts_list)
+            df = df.sort_values(by="Created Time (VN)", ascending=False).reset_index(drop=True)
 
             # Hiển thị bảng dữ liệu với cột "Title" được mở rộng
             st.dataframe(df, use_container_width=True)
 
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(1)
 
 async def main():
     """Chạy vòng lặp chính để lấy và hiển thị bài viết."""
+    df = pd.DataFrame(columns=["Title", "Created Time (VN)", "Sentiment"])
     while True:
-        await fetch_latest_posts()
+        await fetch_latest_posts(df)
 
 # Khởi tạo ứng dụng Streamlit
 if st.button('Start Fetching'):
