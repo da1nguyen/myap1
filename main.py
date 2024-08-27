@@ -17,8 +17,9 @@ reddit = asyncpraw.Reddit(
     check_for_updates=False
 )
 
-# Danh sách để lưu bài viết
+# Khởi tạo DataFrame
 posts_list = []
+df = pd.DataFrame(posts_list)
 
 def format_time(utc_timestamp):
     """Chuyển đổi thời gian UTC sang định dạng ngày giờ khu vực Việt Nam (UTC+7)."""
@@ -33,8 +34,8 @@ def analyze_sentiment(text):
 
 async def fetch_latest_posts():
     """Lấy bài viết mới nhất từ toàn bộ Reddit và chỉ lưu bài viết mới."""
+    global df
     seen_submission_ids = set()
-
     subreddit = await reddit.subreddit('all')
 
     while True:
@@ -44,15 +45,14 @@ async def fetch_latest_posts():
 
                 sentiment = analyze_sentiment(submission.title)
 
-                # Thêm bài viết vào danh sách
-                posts_list.append({
+                # Cập nhật DataFrame
+                global df
+                new_entry = {
                     "Title": submission.title,
                     "Created Time (VN)": format_time(submission.created_utc),
                     "Sentiment": sentiment
-                })
-
-                # Cập nhật DataFrame và sắp xếp theo thời gian
-                df = pd.DataFrame(posts_list)
+                }
+                df = pd.concat([pd.DataFrame([new_entry]), df], ignore_index=True)
                 df = df.sort_values(by="Created Time (VN)", ascending=False).reset_index(drop=True)
 
                 # Hiển thị bảng dữ liệu với thanh cuộn
