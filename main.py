@@ -1,10 +1,12 @@
 import streamlit as st
 import asyncpraw
-from confluent_kafka import Consumer, Producer, KafkaException
-import json
+import pandas as pd
 import asyncio
 from datetime import datetime, timedelta
 import nest_asyncio
+import json
+from confluent_kafka import Producer, Consumer, KafkaException
+from transformers import pipeline
 
 # Cài đặt nest_asyncio để cho phép vòng lặp sự kiện đã chạy tiếp tục hoạt động
 nest_asyncio.apply()
@@ -17,17 +19,23 @@ reddit = asyncpraw.Reddit(
     check_for_updates=False
 )
 
-# Cấu hình Kafka (thay đổi bootstrap.servers để phù hợp với dịch vụ Kafka trên đám mây)
+# Cấu hình Kafka
 producer = Producer({
-    'bootstrap.servers': 'your-cloud-kafka-broker:9092'  # Thay đổi thành địa chỉ của Kafka broker trên đám mây
+    'bootstrap.servers': 'localhost:9092'
 })
 
 consumer = Consumer({
-    'bootstrap.servers': 'your-cloud-kafka-broker:9092',  # Thay đổi thành địa chỉ của Kafka broker trên đám mây
+    'bootstrap.servers': 'localhost:9092',
     'group.id': 'my-group',
     'auto.offset.reset': 'earliest'
 })
 consumer.subscribe(['your_topic_name'])  # Thay đổi theo tên topic Kafka của bạn
+
+# Khởi tạo mô hình dự đoán cảm xúc
+sentiment_model = pipeline('sentiment-analysis')
+
+# Danh sách để lưu bài viết
+posts_list = []
 
 def format_time(utc_timestamp):
     """Chuyển đổi thời gian UTC sang định dạng ngày giờ khu vực Việt Nam (UTC+7)."""
@@ -35,27 +43,43 @@ def format_time(utc_timestamp):
     vietnam_time = utc_time + timedelta(hours=7)
     return vietnam_time.strftime('%Y-%m-%d %H:%M:%S')
 
-async def fetch_latest_post():
-    """Lấy bài viết mới nhất từ toàn bộ Reddit và gửi vào Kafka."""
-    try:
-        subreddit = await reddit.subreddit('all')
+async def fetch_latest_posts():
+    """Lấy bài viết mới nhất từ toàn bộ Reddit và chỉ lưu bài viết mới."""
+    global posts_list
 
-        async for submission in subreddit.new(limit=1):
+    seen_submission_ids = set()
+
+    subreddit = await reddit.subreddit('all')  # Await the subreddit coroutine
+
+    async for submission in subreddit.new(limit=10):  # Lấy nhiều bài viết hơn để kiểm tra
+        if submission.id not in seen_submission_ids:
+            seen_submission_ids.add(submission.id)
+
+            # Dự đoán cảm xúc cho bài viết
+            sentiment = sentiment_model(submission.title)[0]
+            sentiment_label = sentiment['label']
+            sentiment_score = sentiment['score']
+
+            # Tạo dữ liệu bài viết cùng với dự đoán cảm xúc
             post_data = {
                 "Title": submission.title,
-                "Link": submission.url,
-                "Created Time (VN)": format_time(submission.created_utc)
+                "Created Time (VN)": format_time(submission.created_utc),
+                "Sentiment Label": sentiment_label,
+                "Sentiment Score": sentiment_score
             }
+
+            # Thêm bài viết vào danh sách
+            posts_list.append(post_data)
+
+            # Chuyển dữ liệu vào DataFrame
+            df = pd.DataFrame(posts_list)
 
             # Gửi dữ liệu vào Kafka
             producer.produce('your_topic_name', value=json.dumps(post_data))
             producer.flush()
 
-            return post_data
-
-    except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
-        return None
+        # Chờ 1 giây trước khi lấy dữ liệu mới
+        await asyncio.sleep(0.5)
 
 def consume_messages():
     """Tiêu thụ và trả về tin nhắn từ Kafka."""
@@ -75,9 +99,10 @@ def main():
 
     if st.button('Fetch Latest Post'):
         st.write('Fetching the latest post...')
-        # Chạy hàm fetch_latest_post trong môi trường đồng bộ
-        post_data = asyncio.run(fetch_latest_post())
-        st.write(post_data)
+        # Chạy hàm fetch_latest_posts trong môi trường đồng bộ
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(fetch_latest_posts())
+        st.write(pd.DataFrame(posts_list).tail(1))
 
     st.write('Consuming messages from Kafka:')
     # Hiển thị tin nhắn từ Kafka
