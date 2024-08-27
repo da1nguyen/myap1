@@ -1,0 +1,51 @@
+name: Kafka Setup
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  kafka-setup:
+    runs-on: ubuntu-latest
+
+    services:
+      kafka:
+        image: wurstmeister/kafka:latest
+        ports:
+          - 9092:9092
+        options: --health-cmd "nc -z localhost 9092" --health-interval 10s --health-timeout 5s --health-retries 5
+
+      zookeeper:
+        image: wurstmeister/zookeeper:3.7.0
+        ports:
+          - 2181:2181
+        options: --health-cmd "nc -z localhost 2181" --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+
+      - name: Install Kafka CLI tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y kafkacat
+
+      - name: Wait for Kafka and Zookeeper to start
+        run: sleep 30
+
+      - name: Create Kafka topic
+        run: |
+          docker exec kafka kafka-topics --create --topic your_topic_name --partitions 1 --replication-factor 1 --bootstrap-server localhost:9092
+
+      - name: List Kafka topics
+        run: |
+          docker exec kafka kafka-topics --list --bootstrap-server localhost:9092
