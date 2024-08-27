@@ -2,5 +2,5 @@ streamlit
 asyncpraw
 pandas
 transformers
-confluent_kafka
-nest_asyncio
+torch  # Hoặc tensorflow nếu mô hình yêu cầu
+confluent
