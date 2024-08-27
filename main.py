@@ -82,4 +82,16 @@ def main():
     st.write('Consuming messages from Kafka:')
     # Hiển thị tin nhắn từ Kafka
     try:
-        whil
+        while True:
+            message = consume_messages()
+            if message:
+                st.write(message)
+            else:
+                break
+    except KeyboardInterrupt:
+        pass
+    finally:
+        consumer.close()
+
+if __name__ == "__main__":
+    main()
