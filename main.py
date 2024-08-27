@@ -46,7 +46,7 @@ async def fetch_latest_posts():
             sentiment = analyze_sentiment(submission.title)
 
             # Thêm bài viết vào danh sách
-            posts_list.append({
+            posts_list.insert(0, {  # Thêm vào đầu danh sách để tin mới nhất xuất hiện trên đầu
                 "Title": submission.title,
                 "Created Time (VN)": format_time(submission.created_utc),
                 "Sentiment": sentiment
@@ -54,9 +54,6 @@ async def fetch_latest_posts():
 
             # Cập nhật DataFrame
             df = pd.DataFrame(posts_list)
-            
-            if not df.empty:
-                df = df.sort_values(by="Created Time (VN)", ascending=False)
 
             # Hiển thị bảng dữ liệu với cột "Title" được mở rộng
             st.dataframe(df, use_container_width=True)
