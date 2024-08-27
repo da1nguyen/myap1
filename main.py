@@ -53,10 +53,13 @@ async def fetch_latest_posts():
                 "Created Time UTC": submission.created_utc  # Thêm thời gian để sắp xếp
             })
 
-            # Cập nhật DataFrame và sắp xếp bài viết mới nhất lên đầu
+            # Cập nhật DataFrame
             df = pd.DataFrame(posts_list)
-            df = df.sort_values(by="Created Time UTC", ascending=False).drop(columns=["Created Time UTC"])
 
+            # Kiểm tra và xử lý cột 'Created Time UTC'
+            if "Created Time UTC" in df.columns:
+                df = df.sort_values(by="Created Time UTC", ascending=False).drop(columns=["Created Time UTC"])
+            
             # Hiển thị bảng dữ liệu với cột "Title" được mở rộng
             dataframe_placeholder.dataframe(df, height=400, use_container_width=True)
 
